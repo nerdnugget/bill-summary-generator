@@ -18,23 +18,32 @@ if os.path.exists(".env"):
 
 # Configure Anthropic
 api_key = os.getenv("ANTHROPIC_API_KEY")
-if not api_key and hasattr(st.secrets, "ANTHROPIC_API_KEY"):
-    api_key = st.secrets.ANTHROPIC_API_KEY
+if not api_key:
+    try:
+        api_key = st.secrets["ANTHROPIC_API_KEY"]
+    except (KeyError, FileNotFoundError):
+        pass
 
 app_password = os.getenv("APP_PASSWORD", "demo123")
-if not app_password and hasattr(st.secrets, "APP_PASSWORD"):
-    app_password = st.secrets.APP_PASSWORD
+if not app_password:
+    try:
+        app_password = st.secrets["APP_PASSWORD"]
+    except (KeyError, FileNotFoundError):
+        pass
 
 if not api_key:
-    st.error("No Anthropic API key found! Please set ANTHROPIC_API_KEY in environment variables or Streamlit secrets.")
+    st.error("""No Anthropic API key found! Please set up one of the following:
+    1. Add ANTHROPIC_API_KEY to your .env file
+    2. Add it to Streamlit secrets
+    3. Set it as an environment variable""")
     st.stop()
-else:
-    try:
-        client = anthropic.Client(api_key=api_key)
-        st.sidebar.success("API key loaded successfully")
-    except Exception as e:
-        st.error(f"Error initializing Anthropic client: {str(e)}")
-        st.stop()
+
+try:
+    client = anthropic.Client(api_key=api_key)
+    st.sidebar.success("API key loaded successfully")
+except Exception as e:
+    st.error(f"Error initializing Anthropic client: {str(e)}")
+    st.stop()
 
 def check_password():
     """Returns `True` if the user had the correct password."""

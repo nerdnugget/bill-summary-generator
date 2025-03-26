@@ -17,8 +17,13 @@ if os.path.exists(".env"):
     load_dotenv()
 
 # Configure Anthropic
-api_key = os.getenv("ANTHROPIC_API_KEY") or st.secrets.get("ANTHROPIC_API_KEY")
-app_password = os.getenv("APP_PASSWORD") or st.secrets.get("APP_PASSWORD", "demo123")
+api_key = os.getenv("ANTHROPIC_API_KEY")
+if not api_key and hasattr(st.secrets, "ANTHROPIC_API_KEY"):
+    api_key = st.secrets.ANTHROPIC_API_KEY
+
+app_password = os.getenv("APP_PASSWORD", "demo123")
+if not app_password and hasattr(st.secrets, "APP_PASSWORD"):
+    app_password = st.secrets.APP_PASSWORD
 
 if not api_key:
     st.error("No Anthropic API key found! Please set ANTHROPIC_API_KEY in environment variables or Streamlit secrets.")

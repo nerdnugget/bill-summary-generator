@@ -40,12 +40,7 @@ if not api_key:
 
 try:
     client = anthropic.Anthropic(
-        api_key=api_key,
-        default_params={
-            "model": "claude-3-opus-20240229",
-            "max_tokens": 1500,
-            "temperature": 0.5,
-        }
+        api_key=api_key
     )
     st.sidebar.success("API key loaded successfully")
 except Exception as e:

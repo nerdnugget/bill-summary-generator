@@ -39,9 +39,7 @@ if not api_key:
     st.stop()
 
 try:
-    client = anthropic.Client(
-        api_key=api_key
-    )
+    client = anthropic.Client(api_key=api_key)
     st.sidebar.success("API key loaded successfully")
 except Exception as e:
     st.error(f"Error initializing Anthropic client: {str(e)}")
@@ -156,8 +154,7 @@ def format_talking_points(text):
 def generate_bill_summary(bill_text):
     """Generate a summary of the bill using Claude."""
     try:
-        completion = client.completion(
-            model="claude-3-opus-20240229",
+        response = client.complete(
             prompt=f"""You are an expert legislative analyst working for a Democratic NC State Senator. Your role is to:
 1. Break down complex legislation into clear, actionable insights
 2. Highlight implications for North Carolina constituents and communities
@@ -174,10 +171,11 @@ Key Points:
 • [3-4 bullet points emphasizing constituent impact, practical implications, and community effects]
 
 Text: {bill_text}""",
-            max_tokens=1500,
+            model="claude-2",
+            max_tokens_to_sample=1500,
             temperature=0.5
         )
-        return format_summary(completion.message)
+        return format_summary(response.completion)
     except Exception as e:
         st.error(f"Error generating summary: {str(e)}")
         return None
@@ -192,8 +190,7 @@ def generate_social_content(summary, platform):
             "general": "Create talking points that emphasize positive community impact while maintaining broad appeal. Focus on practical benefits for NC constituents."
         }
 
-        completion = client.completion(
-            model="claude-3-opus-20240229",
+        response = client.complete(
             prompt=f"""You are a skilled policy communications expert for a Democratic NC State Senator. Your role is to:
 1. Translate legislation into compelling content that connects with constituents
 2. Highlight impacts on NC communities and families
@@ -210,10 +207,11 @@ Based on this summary, provide 3-4 key talking points that:
 • Emphasize positive local impact
 
 Summary: {summary}""",
-            max_tokens=1000,
+            model="claude-2",
+            max_tokens_to_sample=1000,
             temperature=0.7
         )
-        return format_talking_points(completion.message)
+        return format_talking_points(response.completion)
     except Exception as e:
         st.error(f"Error generating social content: {str(e)}")
         return None
@@ -221,17 +219,17 @@ Summary: {summary}""",
 def generate_key_takeaway(summary):
     """Generate a one-sentence key takeaway from the summary"""
     try:
-        completion = client.completion(
-            model="claude-3-opus-20240229",
+        response = client.complete(
             prompt=f"""You are an expert at distilling complex information into clear, impactful takeaways.
 
 Based on this summary, provide ONE clear, impactful sentence that captures the most important takeaway for NC constituents.
 
 Summary: {summary}""",
-            max_tokens=1000,
+            model="claude-2",
+            max_tokens_to_sample=1000,
             temperature=0.5
         )
-        return completion.message
+        return response.completion
     except Exception as e:
         st.error(f"Error generating key takeaway: {str(e)}")
         return None
@@ -239,8 +237,7 @@ Summary: {summary}""",
 def process_single_bill(bill):
     """Process a single bill for batch processing"""
     try:
-        completion = client.completion(
-            model="claude-3-opus-20240229",
+        response = client.complete(
             prompt=f"""You are an expert legislative analyst working for a Democratic NC State Senator. Your role is to:
 1. Break down complex legislation into clear, actionable insights
 2. Highlight implications for North Carolina constituents and communities
@@ -257,12 +254,13 @@ Key Points:
 • [3-4 bullet points emphasizing constituent impact, practical implications, and community effects]
 
 Text: {bill['text']}""",
-            max_tokens=1000,
+            model="claude-2",
+            max_tokens_to_sample=1000,
             temperature=0.5
         )
         return {
             "name": bill["name"],
-            "summary": format_summary(completion.message)
+            "summary": format_summary(response.completion)
         }
     except Exception as e:
         return {

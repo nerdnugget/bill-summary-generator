@@ -39,7 +39,14 @@ if not api_key:
     st.stop()
 
 try:
-    client = anthropic.Client(api_key=api_key)
+    client = anthropic.Anthropic(
+        api_key=api_key,
+        default_params={
+            "model": "claude-3-opus-20240229",
+            "max_tokens": 1500,
+            "temperature": 0.5,
+        }
+    )
     st.sidebar.success("API key loaded successfully")
 except Exception as e:
     st.error(f"Error initializing Anthropic client: {str(e)}")
@@ -154,24 +161,31 @@ def format_talking_points(text):
 def generate_bill_summary(bill_text):
     """Generate a summary of the bill using Claude."""
     try:
-        prompt = f"""Please analyze this legislative bill and provide:
-1. A clear summary
-2. Key points
-3. Potential impact
+        message = client.messages.create(
+            model="claude-3-opus-20240229",
+            max_tokens=1500,
+            system="""You are an expert legislative analyst working for a Democratic NC State Senator. Your role is to:
+1. Break down complex legislation into clear, actionable insights
+2. Highlight implications for North Carolina constituents and communities
+3. Consider impacts on working families and local economies
+4. Identify opportunities for effective policy solutions
+5. Use clear, accessible language while preserving technical accuracy
+6. Note potential areas for bipartisan cooperation when relevant""",
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"""Please analyze this bill and provide:
 
-Bill text:
-{bill_text}
+Bill Name/Title: [1 line]
+Purpose: [1-2 sentences focusing on NC impact and community benefits]
+Key Points:
+• [3-4 bullet points emphasizing constituent impact, practical implications, and community effects]
 
-Please format your response with clear section headers."""
-
-        response = client.completion(
-            prompt=prompt,
-            model="claude-2",
-            max_tokens_to_sample=1500,
-            temperature=0.5,
+Text: {bill_text}"""
+                }
+            ]
         )
-        
-        return format_summary(response.completion)
+        return format_summary(message.content[0].text)
     except Exception as e:
         st.error(f"Error generating summary: {str(e)}")
         return None
@@ -179,20 +193,38 @@ Please format your response with clear section headers."""
 def generate_social_content(summary, platform):
     """Generate platform-specific content based on the bill summary."""
     try:
-        prompt = f"""Based on this bill summary, create engaging content for {platform}. 
-        Focus on key points and potential impact. Use appropriate tone and format for {platform}.
+        platform_guidance = {
+            "twitter": "Create concise, impactful points optimized for Twitter that resonate with NC constituents. Focus on community benefits and practical improvements.",
+            "facebook": "Write slightly longer points for Facebook that highlight local impact and community stories. Include examples relevant to NC communities.",
+            "newsletter": "Develop newsletter content that connects policy to community benefits. Focus on how legislation affects NC families and businesses.",
+            "general": "Create talking points that emphasize positive community impact while maintaining broad appeal. Focus on practical benefits for NC constituents."
+        }
 
-        Summary:
-        {summary}"""
+        message = client.messages.create(
+            model="claude-3-opus-20240229",
+            max_tokens=1000,
+            system=f"""You are a skilled policy communications expert for a Democratic NC State Senator. Your role is to:
+1. Translate legislation into compelling content that connects with constituents
+2. Highlight impacts on NC communities and families
+3. Frame issues in ways that emphasize practical solutions
+4. Maintain professionalism while focusing on community benefits
+5. Adapt tone and depth based on platform while staying informative
 
-        response = client.completion(
-            prompt=prompt,
-            model="claude-2",
-            max_tokens_to_sample=1000,
-            temperature=0.7,
+{platform_guidance.get(platform.lower(), platform_guidance["general"])}""",
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"""Based on this summary, provide 3-4 key talking points that:
+• Highlight benefits for NC communities
+• Focus on practical solutions
+• Use platform-appropriate language
+• Emphasize positive local impact
+
+Summary: {summary}"""
+                }
+            ]
         )
-        
-        return format_talking_points(response.completion)
+        return format_talking_points(message.content[0].text)
     except Exception as e:
         st.error(f"Error generating social content: {str(e)}")
         return None
@@ -200,22 +232,20 @@ def generate_social_content(summary, platform):
 def generate_key_takeaway(summary):
     """Generate a one-sentence key takeaway from the summary"""
     try:
-        prompt = f"""Based on this bill summary, provide a single, concise sentence that captures 
-        the most important takeaway. Make it clear and impactful.
-
-        Summary:
-        {summary}
-
-        Key takeaway (one sentence):"""
-
-        response = client.completion(
-            prompt=prompt,
-            model="claude-2",
-            max_tokens_to_sample=200,
-            temperature=0.5,
+        message = client.messages.create(
+            model="claude-3-opus-20240229",
+            max_tokens=1000,
+            system="You are an expert at distilling complex information into clear, impactful takeaways.",
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"""Based on this summary, provide ONE clear, impactful sentence that captures the most important takeaway for NC constituents.
+                    
+Summary: {summary}"""
+                }
+            ]
         )
-        
-        return response.completion.strip()
+        return message.content[0].text
     except Exception as e:
         st.error(f"Error generating key takeaway: {str(e)}")
         return None
@@ -223,26 +253,33 @@ def generate_key_takeaway(summary):
 def process_single_bill(bill):
     """Process a single bill for batch processing"""
     try:
-        prompt = f"""Please analyze this legislative bill and provide:
-1. A clear summary
-2. Key points
-3. Potential impact
+        message = client.messages.create(
+            model="claude-3-opus-20240229",
+            max_tokens=1000,
+            system="""You are an expert legislative analyst working for a Democratic NC State Senator. Your role is to:
+1. Break down complex legislation into clear, actionable insights
+2. Highlight implications for North Carolina constituents and communities
+3. Consider impacts on working families and local economies
+4. Identify opportunities for effective policy solutions
+5. Use clear, accessible language while preserving technical accuracy
+6. Note potential areas for bipartisan cooperation when relevant""",
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"""Please analyze this bill and provide:
 
-Bill text:
-{bill['text']}
+Bill Name/Title: [1 line]
+Purpose: [1-2 sentences focusing on NC impact and community benefits]
+Key Points:
+• [3-4 bullet points emphasizing constituent impact, practical implications, and community effects]
 
-Please format your response with clear section headers."""
-
-        response = client.completion(
-            prompt=prompt,
-            model="claude-2",
-            max_tokens_to_sample=1500,
-            temperature=0.5,
+Text: {bill['text']}"""
+                }
+            ]
         )
-        
         return {
             "name": bill["name"],
-            "summary": format_summary(response.completion)
+            "summary": format_summary(message.content[0].text)
         }
     except Exception as e:
         return {

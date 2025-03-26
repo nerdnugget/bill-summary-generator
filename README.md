@@ -38,7 +38,7 @@ A Streamlit web application that generates concise summaries and talking points 
 
 Run the Streamlit app locally:
 ```bash
-streamlit run app.py
+streamlit run streamlit_app.py
 ```
 
 ## Deployment Options
@@ -56,7 +56,7 @@ streamlit run app.py
 1. Install Heroku CLI
 2. Create a `Procfile`:
    ```
-   web: streamlit run app.py
+   web: streamlit run streamlit_app.py
    ```
 3. Initialize git and push to Heroku:
    ```bash

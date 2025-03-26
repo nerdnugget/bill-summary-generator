@@ -1,9 +1,4 @@
 import streamlit as st
-
-# Must be the first Streamlit command
-st.set_page_config(page_title="Bill Summary Generator", page_icon="📜", layout="wide")
-
-from dotenv import load_dotenv
 import anthropic
 import os
 import PyPDF2
@@ -11,16 +6,23 @@ import io
 import requests
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
-import concurrent.futures
 import hmac
+from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Must be the first Streamlit command
+st.set_page_config(page_title="Bill Summary Generator", page_icon="📜", layout="wide")
+
+# Load environment variables - make it work with both .env and Streamlit secrets
+if os.path.exists(".env"):
+    load_dotenv()
 
 # Configure Anthropic
-api_key = os.getenv("ANTHROPIC_API_KEY")
+api_key = os.getenv("ANTHROPIC_API_KEY") or st.secrets.get("ANTHROPIC_API_KEY")
+app_password = os.getenv("APP_PASSWORD") or st.secrets.get("APP_PASSWORD", "demo123")
+
 if not api_key:
-    st.error("No Anthropic API key found in environment variables!")
+    st.error("No Anthropic API key found! Please set ANTHROPIC_API_KEY in environment variables or Streamlit secrets.")
+    st.stop()
 else:
     st.sidebar.success("API key loaded successfully")
     
@@ -31,7 +33,7 @@ def check_password():
 
     def password_entered():
         """Checks whether a password entered by the user is correct."""
-        if hmac.compare_digest(st.session_state["password"], os.getenv("APP_PASSWORD", "demo123")):
+        if hmac.compare_digest(st.session_state["password"], app_password):
             st.session_state["password_correct"] = True
             del st.session_state["password"]  # Don't store the password.
         else:

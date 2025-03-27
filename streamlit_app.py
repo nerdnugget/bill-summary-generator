@@ -31,7 +31,16 @@ if not api_key:
 else:
     st.sidebar.success("API key loaded successfully")
     
-client = anthropic.Anthropic(api_key=api_key)
+try:
+    # Initialize the client with more explicit parameters
+    client = anthropic.Anthropic(
+        api_key=api_key,
+        # Add timeout to prevent hanging
+        timeout=120.0
+    )
+except Exception as e:
+    st.error(f"Error initializing Anthropic client: {str(e)}")
+    st.stop()
 
 def check_password():
     """Returns `True` if the user had the correct password."""
